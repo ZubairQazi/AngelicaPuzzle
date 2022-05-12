@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
+import numpy as np
 import copy
+
+import time
 
 goal = [['A', 'N', 'G'],
         ['E', 'L', 'I'],
@@ -8,7 +11,7 @@ goal = [['A', 'N', 'G'],
 
 # define a node in the search tree
 class Node:
-    def __init(self, puzzle, cost, depth):
+    def __init__(self, puzzle, cost, depth):
         self.puzzle = puzzle
         self.cost = cost
         self.depth = depth
@@ -21,8 +24,12 @@ def search(root: Node, heuristic):
 
     max_frontier_size, num_expanded = 0, 0
 
-    while frontier:
+    while frontier and num_expanded < 50000:
         current = frontier.pop()
+
+        print(np.array(current.puzzle), '\n')
+
+        time.sleep(1)
 
         if current == goal:
             print("Success!")
@@ -31,12 +38,13 @@ def search(root: Node, heuristic):
             return current
         
         # if not goal state, proceed
-        frontier.extend(queuing_function(current, frontier, seen, heuristic))
+        frontier = queuing_function(current, frontier, seen, heuristic)
 
         # update counters
-        # TODO: Update max frontier size
         num_expanded += 1
 
+        if len(frontier) > max_frontier_size:
+            max_frontier_size = len(frontier)
 
     return None
 
@@ -45,10 +53,13 @@ def search(root: Node, heuristic):
 def queuing_function(current: Node, frontier, seen, heuristic):
 
     # expand the current node
-
     children = get_children(current, seen, heuristic)
+    frontier.extend(children)
 
-    return []
+    # sort the list based on overall cost g(n) (depth) + h(n) (estimate to goal)
+    frontier = sorted(frontier, key=lambda node: node.cost + node.depth)
+
+    return frontier
 
 
 # return all valid children of node
@@ -56,44 +67,43 @@ def get_children(node: Node, seen, heuristic):
 
     children = []
 
-    r, c = find(node.puzzle, 0)
+    r, c = find(node.puzzle, 'X')
 
-    if r > 0:
+    if r < (len(node.puzzle) - 1):
         puzzle_down = copy.deepcopy(node.puzzle)
         puzzle_down[r][c], puzzle_down[r + 1][c] = puzzle_down[r + 1][c], puzzle_down[r][c]
 
         if puzzle_down not in seen:
             seen.append(puzzle_down)
-            children.append(Node(puzzle_down, get_cost(node.depth + 1, puzzle_down, heuristic), node.depth + 1))
+            children.append(Node(puzzle_down, get_cost(puzzle_down, heuristic), node.depth + 1))
 
-    if r < len(node.puzzle):
+    if r > 0:
         puzzle_up = copy.deepcopy(node.puzzle)
         puzzle_up[r][c], puzzle_up[r - 1][c] = puzzle_up[r - 1][c], puzzle_up[r][c]
 
         if puzzle_up not in seen:
             seen.append(puzzle_up)
-            children.append(Node(puzzle_up, get_cost(node.depth + 1, puzzle_up, heuristic), node.depth + 1))
+            children.append(Node(puzzle_up, get_cost(puzzle_up, heuristic), node.depth + 1))
 
-    if c  > 0:
+    if c  < (len(node.puzzle[0]) - 1):
         puzzle_left = copy.deepcopy(node.puzzle)
         puzzle_left[r][c], puzzle_left[r][c + 1] = puzzle_left[r][c + 1], puzzle_left[r][c]
 
         if puzzle_left not in seen:
             seen.append(puzzle_left)
-            children.append(Node(puzzle_left, get_cost(node.depth + 1, puzzle_left, heuristic), node.depth + 1))
+            children.append(Node(puzzle_left, get_cost(puzzle_left, heuristic), node.depth + 1))
     
-    if c  < len(node.puzzle[0]):
+    if c > 0:
         puzzle_right = copy.deepcopy(node.puzzle)
         puzzle_right[r][c], puzzle_right[r][c - 1] = puzzle_right[r][c - 1], puzzle_right[r][c]
 
         if puzzle_right not in seen:
             seen.append(puzzle_right)
-            children.append(Node(puzzle_right, get_cost(node.depth + 1, puzzle_right, heuristic), node.depth + 1))
+            children.append(Node(puzzle_right, get_cost(puzzle_right, heuristic), node.depth + 1))
 
     return children
 
 
-# returns index (row, col) of value in puzzle
 def find(puzzle, val):
     for i, row in enumerate(puzzle):
         for j, col in enumerate(row):
@@ -103,18 +113,19 @@ def find(puzzle, val):
     # returns -1 if value is not found
     return -1, -1
 
-def get_cost(node_depth: Node, node_puzzle, heuristic):
+
+def get_cost(node_puzzle, heuristic):
     if heuristic == 'uniform':
-        return node_depth
+        return 0
     elif heuristic == 'misplaced':
-        return node_depth + misplaced_cost(node_puzzle)
+        return misplaced_cost(node_puzzle)
     elif heuristic == 'manhattan':
-        return node_depth + manhattan_cost(node_puzzle)
+        return manhattan_cost(node_puzzle)
     
+    print('Invalid Heuristic')
     return None
 
 
-# returns the number of misplaced tiles
 def misplaced_cost(node_puzzle):
     misplaced_count = 0
     for i, row in enumerate(node_puzzle):
@@ -126,8 +137,7 @@ def misplaced_cost(node_puzzle):
     return misplaced_count
 
 
-# returns the manhattan heuristic evaluation
-def manhattan_heuristic(node_puzzle):
+def manhattan_cost(node_puzzle): 
     manhattan_sum = 0
     for i, row in enumerate(node_puzzle):
         for j, val in enumerate(row):
@@ -139,4 +149,16 @@ def manhattan_heuristic(node_puzzle):
                 manhattan_sum += (abs(r - i) + abs(c - j))
 
     return manhattan_sum
+
+if __name__ == '__main__':
+    default = [['A', 'N', 'G'],
+        ['E', 'L', 'I'],
+        ['C', 'X', 'A']]
+    
+
+    result = search(Node(default, 0, 0), 'misplaced')
+    if result is not None:
+        print('Solution found at depth: ', result.depth)
+    else:
+        print('No solution found after 50000 expansions')
 
