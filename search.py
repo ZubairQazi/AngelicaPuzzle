@@ -13,6 +13,9 @@ goal = [['A', 'N', 'G'],
 # For the hash function
 hash_keys = {'A': 1, 'N': 2, 'G': 3, 'E': 4, 'L': 5, 'I': 6, 'C': 7, 'A': 8, 'X': 9}
 
+# heuristics
+heuristics = {'1': 'uniform', '2': 'misplaced', '3': 'manhattan'}
+
 # define a node in the search tree
 class Node:
     def __init__(self, puzzle, cost, depth):
@@ -182,6 +185,45 @@ def manhattan_cost(node_puzzle):
 
     return manhattan_sum
 
+
+def check_validity(puzzle):
+    benchmark = np.unique(np.array(goal, dtype=object), return_counts=True)
+    input = np.unique(np.array(puzzle, dtype=object), return_counts=True)
+    return (benchmark[0] == input[0]).all() and (benchmark[1] == input[1]).all()
+
+
+def print_menu():
+    puzzle = []
+
+    while True:
+        print('Welcome to Zubair\'s Angelica Puzzle solver')
+        print('Enter your puzzle, use an \'X\' for the blank')
+
+        puzzle.append([ ch.capitalize() for ch in (input('Enter the first row, separate with spaces: ')).split(' ')])
+        puzzle.append([ch.capitalize() for ch in (input('Enter the second row, separate with spaces: ')).split(' ')])
+        puzzle.append([ch.capitalize() for ch in (input('Enter the third row, separate with spaces: ')).split(' ')])
+
+        # check inputted puzzle for validity
+        if not check_validity(puzzle):
+            puzzle = []
+            print('\nEntered an invalid puzzle, please reinput. See below for example')
+            print(np.array(goal))
+            print()
+            continue
+        else:
+            break
+
+
+    print('\nEnter the desired algorithm')
+    print('\t1. Uniform Cost Search')
+    print('\t2. A* with Misplaced Tile')
+    print('\t3. A* with Manhattan Distance\n')
+
+    heuristic = heuristics[input()]
+
+    return puzzle, heuristic
+
+
 if __name__ == '__main__':
 
     depth_24 = [['X', 'C', 'N'],
@@ -192,7 +234,9 @@ if __name__ == '__main__':
     #             ['E', 'L', 'I'],
     #             ['C', 'X', 'A']]
 
-    result = search(Node(depth_24, 0, 0), 'misplaced')
+    puzzle, heuristic = print_menu()
+
+    result = search(Node(puzzle, 0, 0), heuristic)
     if result is not None:
         print('Solution found at depth: ', result.depth)
     else:
