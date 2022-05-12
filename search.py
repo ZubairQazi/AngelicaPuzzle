@@ -25,20 +25,18 @@ def search(root: Node, heuristic):
     max_frontier_size, num_expanded = 0, 0
 
     while frontier and num_expanded < 50000:
-        current = frontier.pop()
+        current = frontier.pop(0)
 
         print(np.array(current.puzzle), '\n')
 
-        time.sleep(1)
-
-        if current == goal:
+        if current.puzzle == goal:
             print("Success!")
             print(f'Nodes Expanded {num_expanded}')
             print(f'Maximum frontier size: {max_frontier_size}')
             return current
         
         # if not goal state, proceed
-        frontier = queuing_function(current, frontier, seen, heuristic)
+        queuing_function(current, frontier, seen, heuristic)
 
         # update counters
         num_expanded += 1
@@ -54,12 +52,11 @@ def queuing_function(current: Node, frontier, seen, heuristic):
 
     # expand the current node
     children = get_children(current, seen, heuristic)
+    
     frontier.extend(children)
 
-    # sort the list based on overall cost g(n) (depth) + h(n) (estimate to goal)
+    # sort the list based on overall cost g(n) + h(n) (depth + estimate to goal)
     frontier = sorted(frontier, key=lambda node: node.cost + node.depth)
-
-    return frontier
 
 
 # return all valid children of node
@@ -69,6 +66,7 @@ def get_children(node: Node, seen, heuristic):
 
     r, c = find(node.puzzle, 'X')
 
+    # move a tile down (or empty tile up)
     if r < (len(node.puzzle) - 1):
         puzzle_down = copy.deepcopy(node.puzzle)
         puzzle_down[r][c], puzzle_down[r + 1][c] = puzzle_down[r + 1][c], puzzle_down[r][c]
@@ -77,6 +75,7 @@ def get_children(node: Node, seen, heuristic):
             seen.append(puzzle_down)
             children.append(Node(puzzle_down, get_cost(puzzle_down, heuristic), node.depth + 1))
 
+    # move a tile up (or empty tile down)
     if r > 0:
         puzzle_up = copy.deepcopy(node.puzzle)
         puzzle_up[r][c], puzzle_up[r - 1][c] = puzzle_up[r - 1][c], puzzle_up[r][c]
@@ -85,6 +84,7 @@ def get_children(node: Node, seen, heuristic):
             seen.append(puzzle_up)
             children.append(Node(puzzle_up, get_cost(puzzle_up, heuristic), node.depth + 1))
 
+    # move a tile left (or empty tile right)
     if c  < (len(node.puzzle[0]) - 1):
         puzzle_left = copy.deepcopy(node.puzzle)
         puzzle_left[r][c], puzzle_left[r][c + 1] = puzzle_left[r][c + 1], puzzle_left[r][c]
@@ -93,6 +93,7 @@ def get_children(node: Node, seen, heuristic):
             seen.append(puzzle_left)
             children.append(Node(puzzle_left, get_cost(puzzle_left, heuristic), node.depth + 1))
     
+    # move a tile right (or empty tile left)
     if c > 0:
         puzzle_right = copy.deepcopy(node.puzzle)
         puzzle_right[r][c], puzzle_right[r][c - 1] = puzzle_right[r][c - 1], puzzle_right[r][c]
