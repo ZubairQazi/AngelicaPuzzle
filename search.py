@@ -6,6 +6,8 @@ import hashlib
 
 import time
 
+## GLOBAL VARS
+
 goal = [['A', 'N', 'G'],
         ['E', 'L', 'I'],
         ['C', 'A', 'X']]
@@ -15,6 +17,7 @@ hash_keys = {'A': 1, 'N': 2, 'G': 3, 'E': 4, 'L': 5, 'I': 6, 'C': 7, 'A': 8, 'X'
 
 # heuristics
 heuristics = {'1': 'uniform', '2': 'misplaced', '3': 'manhattan'}
+
 
 # define a node in the search tree
 class Node:
@@ -35,7 +38,7 @@ def search(root: Node, heuristic):
     print(np.array(root.puzzle))
     print()
 
-    while frontier and num_expanded < 50000:
+    while frontier and num_expanded < 150000:
         current = frontier.pop(0)
 
         # print(current.puzzle == goal)
@@ -44,7 +47,7 @@ def search(root: Node, heuristic):
             print("Success!")
             print(f'Nodes Expanded: {num_expanded}')
             print(f'Maximum frontier size: {max_frontier_size}')
-            return current
+            return current, num_expanded, max_frontier_size
         
         # if not goal state, proceed
         frontier, seen = queuing_function(current, frontier, seen, heuristic)
@@ -55,7 +58,7 @@ def search(root: Node, heuristic):
         if len(frontier) > max_frontier_size:
             max_frontier_size = len(frontier)
 
-    return None
+    return None, None, None
 
 
 # expand current node
@@ -133,6 +136,8 @@ def get_children(node: Node, seen, heuristic):
     return children, seen
 
 
+## HELPERS
+
 # return a hash of the puzzle
 def hash_function(node_puzzle):
     return hashlib.sha1(np.array(node_puzzle).tobytes()).hexdigest()
@@ -161,6 +166,8 @@ def get_cost(node_puzzle, heuristic):
     return None
 
 
+## HEURISTICS
+
 def misplaced_cost(node_puzzle):
     misplaced_count = 0
     for i, row in enumerate(node_puzzle):
@@ -186,6 +193,9 @@ def manhattan_cost(node_puzzle):
     return manhattan_sum
 
 
+## MENU
+
+# check inputted puzzle validity
 def check_validity(puzzle):
     benchmark = np.unique(np.array(goal, dtype=object), return_counts=True)
     input = np.unique(np.array(puzzle, dtype=object), return_counts=True)
@@ -224,26 +234,19 @@ def print_menu():
     return puzzle, heuristic
 
 
+## MAIN
+
 if __name__ == '__main__':
 
-    depth_24 = [['X', 'C', 'N'],
-                ['E', 'I', 'A'],
-                ['G', 'L', 'A']]
-
-    # default = [['A', 'N', 'G'],
-    #             ['E', 'L', 'I'],
-    #             ['C', 'X', 'A']]
+    default = [ ['C', 'A', 'N'],
+                ['E', 'A', 'L'],
+                ['I', 'G', 'X'] ]
 
     puzzle, heuristic = print_menu()
 
-    result = search(Node(puzzle, 0, 0), heuristic)
+    result, _, _ = search(Node(puzzle, 0, 0), heuristic)
+
     if result is not None:
         print('Solution found at depth: ', result.depth)
     else:
-        print('No solution found after 50000 expansions')
-
-# 1: A  2: N  3: G     4: E    5: L    6: I    7: C    8: A     9:X
-
-# depth_20 = [['C', 'A', 'N'],
-    #         ['E', 'A', 'L'],
-    #         ['I', 'G', 'X']]
+        print('No solution found after 150,000 expansions')
